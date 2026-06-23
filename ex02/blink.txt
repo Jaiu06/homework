@@ -35,6 +35,4 @@ void loop() {
       Serial.println("LED OFF");
     }
   }
-
-  // 此处可放置其他非阻塞任务，例如传感器读取、按键检测等
 }
