@@ -1,0 +1,40 @@
+// 定义LED引脚，ESP32通常板载LED连接在GPIO 2
+const int ledPin = 2;
+
+// 闪烁周期：1Hz = 1000ms周期，半周期为500ms（亮500ms，灭500ms）
+const unsigned long interval = 500;
+
+int ledState = LOW;                // LED当前状态
+unsigned long previousMillis = 0;  // 上次状态切换的时刻
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, ledState);  // 初始状态：熄灭
+}
+
+void loop() {
+  unsigned long currentMillis = millis();  // 获取当前运行时间（毫秒）
+
+  // 判断是否到达下一次切换时间
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;  // 更新基准时间
+
+    // 翻转LED状态
+    if (ledState == LOW) {
+      ledState = HIGH;
+    } else {
+      ledState = LOW;
+    }
+    digitalWrite(ledPin, ledState);
+
+    // 串口输出当前状态（与参考代码一致）
+    if (ledState == HIGH) {
+      Serial.println("LED ON");
+    } else {
+      Serial.println("LED OFF");
+    }
+  }
+
+  // 此处可放置其他非阻塞任务，例如传感器读取、按键检测等
+}
