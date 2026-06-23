@@ -1,0 +1,79 @@
+// 定义LED引脚，ESP32通常板载LED连接在GPIO 2
+const int ledPin = 2;
+
+// SOS 闪烁时序定义（单位：毫秒）
+// 格式：{LED状态(HIGH/LOW), 持续时间}
+struct Step {
+  uint8_t state;        // HIGH 或 LOW
+  unsigned long duration; // 保持该状态的毫秒数
+};
+
+// 构建完整的 SOS 序列
+// S: 3次短闪（亮200ms，灭200ms）×3 → 6步
+// 字母间隔：灭500ms
+// O: 3次长闪（亮600ms，灭200ms）×3 → 6步
+// 字母间隔：灭500ms
+// S: 3次短闪 → 6步
+// 单词间隔：灭2000ms
+const Step sosSequence[] = {
+  // S
+  {HIGH, 200}, {LOW, 200},
+  {HIGH, 200}, {LOW, 200},
+  {HIGH, 200}, {LOW, 200},
+  // 字母间隔（S与O之间）
+  {LOW, 500},
+  // O
+  {HIGH, 600}, {LOW, 200},
+  {HIGH, 600}, {LOW, 200},
+  {HIGH, 600}, {LOW, 200},
+  // 字母间隔（O与S之间）
+  {LOW, 500},
+  // S
+  {HIGH, 200}, {LOW, 200},
+  {HIGH, 200}, {LOW, 200},
+  {HIGH, 200}, {LOW, 200},
+  // 单词间隔（SOS结束，等待下一次）
+  {LOW, 2000}
+};
+
+const int totalSteps = sizeof(sosSequence) / sizeof(sosSequence[0]);
+
+int currentStep = 0;               // 当前执行的步骤索引
+unsigned long previousMillis = 0;  // 上次步骤切换的时间
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(ledPin, OUTPUT);
+  // 设置初始状态为序列的第一步
+  digitalWrite(ledPin, sosSequence[0].state);
+  previousMillis = millis();
+}
+
+void loop() {
+  unsigned long currentMillis = millis();
+
+  // 检查是否到了切换下一步的时间
+  if (currentMillis - previousMillis >= sosSequence[currentStep].duration) {
+    previousMillis = currentMillis;  // 更新时间基准
+
+    // 移动到下一步，如果到最后则回到开头
+    currentStep++;
+    if (currentStep >= totalSteps) {
+      currentStep = 0;
+    }
+
+    // 应用新步骤的LED状态
+    digitalWrite(ledPin, sosSequence[currentStep].state);
+
+    // 可选：串口输出当前状态（便于调试）
+    // 这里只输出亮/灭变化，避免过于频繁
+    static bool lastOutputState = false;
+    bool newState = (sosSequence[currentStep].state == HIGH);
+    if (newState != lastOutputState) {
+      Serial.println(newState ? "LED ON" : "LED OFF");
+      lastOutputState = newState;
+    }
+  }
+
+  // 此处可添加其他非阻塞任务
+}
